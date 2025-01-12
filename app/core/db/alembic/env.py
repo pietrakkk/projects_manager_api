@@ -1,10 +1,12 @@
+import asyncio
 from logging.config import fileConfig
 
 from alembic import context
+from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
-from app.core.db.models.base import Base
 
-from app.settings import Settings
+from app.core.db.models.base import Base
+from app.settings import Settings, settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -39,9 +41,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = str(Settings.db_url)
     context.configure(
-        url=url,
+        url=str(settings.db_url),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -51,22 +52,31 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
+def do_run_migrations(connection: Connection) -> None:
+    context.configure(connection=connection, target_metadata=target_metadata)
 
-    In this scenario we need to create an Engine
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations() -> None:
+    """In this scenario we need to create an Engine
     and associate a connection with the context.
 
     """
-    connectable = create_async_engine(str(Settings.db_url))
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+    connectable = create_async_engine(str(settings.db_url))
 
-        with context.begin_transaction():
-            context.run_migrations()
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+
+    await connectable.dispose()
+
+
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode."""
+
+    asyncio.run(run_async_migrations())
 
 
 if context.is_offline_mode():

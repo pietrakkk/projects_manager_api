@@ -2,10 +2,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-#RUN apt-get update && apt-get install -y --no-install-recommends \
-#    build-essential \
-#    libpq-dev \
-#    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -13,6 +13,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . /app/
 
-EXPOSE 8000
+EXPOSE 8001
 
-CMD ["python", "app.py"]
+CMD ["python", "app/main.py"]
