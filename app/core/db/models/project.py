@@ -1,8 +1,7 @@
+from core.db.models.base import Base
 from geoalchemy2 import Geometry
 from sqlalchemy import Column, String, Date, ForeignKey
 from sqlalchemy.orm import relationship
-
-from app.core.db.models.base import BaseDBModel, Base
 
 
 class AreaOfInterest(Base):
@@ -10,6 +9,7 @@ class AreaOfInterest(Base):
 
     file_name = Column(String(100), nullable=False)
     geometry = Column(Geometry('GEOMETRY'), nullable=False)
+    project = relationship("Project", uselist=False, back_populates="area_of_interest")
 
 
 class Project(Base):
@@ -18,7 +18,7 @@ class Project(Base):
     name = Column(String(32), nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
-    Column(String, ForeignKey('area_of_interest.id'), nullable=False)
-    description = Column(String(300), nullable=True)
+    area_of_interest_id = Column(String, ForeignKey('area_of_interest.id'), nullable=False)
+    description = Column(String(255), nullable=True)
 
-    area_of_interest = relationship("AreaOfInterest", back_populates="projects")
+    area_of_interest = relationship("AreaOfInterest", back_populates="project")
