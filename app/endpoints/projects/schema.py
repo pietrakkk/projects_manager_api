@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.core.utils import validate_date
+from core.utils import validate_date
 
 
 class GeoJsonfileType(Enum):
@@ -16,7 +16,6 @@ class ProjectCreate(BaseModel):
     start_date: datetime.date
     end_date: datetime.date
     description: str | None = Field(..., max_length=255)
-
 
     @model_validator(mode='before')
     @classmethod
@@ -30,7 +29,7 @@ class ProjectCreate(BaseModel):
         return data
 
 
-class ProjectResponse(BaseModel):
+class ProjectListResponse(BaseModel):
     id: str
     name: str
     start_date: datetime.date
@@ -40,6 +39,6 @@ class ProjectResponse(BaseModel):
     modified: datetime.datetime
 
 
-class GeoJsonContent(BaseModel):
-    type: str
-    features: list[dict]
+class ProjectUpdate(BaseModel):
+    name: str
+    description: str | None

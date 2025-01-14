@@ -5,7 +5,7 @@ from endpoints.projects.dependencies import get_form_payload
 from endpoints.projects.repository import projects_repository
 from endpoints.projects.schema import GeoJsonfileType
 from endpoints.projects.schema import ProjectCreate
-from endpoints.projects.schema import ProjectResponse
+from endpoints.projects.schema import ProjectUpdate, ProjectListResponse
 from endpoints.projects.service import project_service
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi import status
@@ -21,15 +21,15 @@ router = APIRouter(
 )
 
 
-@router.get('/', response_model=list[ProjectResponse])
+@router.get('/', response_model=list[ProjectListResponse])
 async def get_projects():
     return await projects_repository.list()
 
 
-@router.post('/', response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+@router.post('/', response_model=ProjectListResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
-    payload: ProjectCreate = Depends(get_form_payload),
-    file: UploadFile = File(...),
+        payload: ProjectCreate = Depends(get_form_payload),
+        file: UploadFile = File(...),
 ):
     try:
         geojson_data = await file.read()
@@ -58,3 +58,18 @@ async def get_project(project_id: str):
     except SQLAlchemyError:
         # TODO: log exc
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Cannot download project')
+
+@router.patch('/{project_id}')
+async def update_project(project_id: str, payload: ProjectUpdate):
+    try:
+        return await projects_repository.update(project_id, payload.dict())
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Project not found')
+
+
+@router.delete('/{project_id}')
+async def delete_project(project_id: str):
+    try:
+        await projects_repository.remove(project_id)
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Project not found')

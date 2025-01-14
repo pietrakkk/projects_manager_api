@@ -4,12 +4,11 @@ from typing import Any
 from core.db.config import AsyncSessionLocal
 from core.db.models import Project, AreaOfInterest
 from endpoints.projects.repository import projects_repository
-from endpoints.projects.schema import ProjectCreate
-from endpoints.projects.schema import ProjectResponse
+from endpoints.projects.schema import ProjectCreate, ProjectListResponse
 from geoalchemy2.functions import ST_AsGeoJSON
 from shapely.geometry import shape
 from shapely.wkb import dumps as wkb_dumps
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import NoResultFound
 
 
@@ -31,27 +30,33 @@ class ProjectService:
 
         return await self.repository.add(project)
 
-    async def get_project(self, project_id: str) -> Project:
+    @staticmethod
+    async def get_project(project_id: str) -> Project:
         async with AsyncSessionLocal() as session:
-            query = select(
-                Project,
-                ST_AsGeoJSON(AreaOfInterest.geometry).label('geojson')
-            ).join(
-                AreaOfInterest, AreaOfInterest.id == Project.area_of_interest_id
-            ).where(Project.id == project_id)
+            results = (
+                select(
+                    Project,
+                    func.json_build_object(
+                        'file_name', AreaOfInterest.file_name,
+                        'geometry', ST_AsGeoJSON(AreaOfInterest.geometry)
+                    ).label("area_of_interest")
+                )
+                .join(AreaOfInterest)
+                .where(Project.id == project_id)
+            )
 
-            stmt = await session.execute(query)
+            stmt = await session.execute(results)
             result = stmt.fetchone()
 
             if not result:
                 raise NoResultFound()
 
             project, area_of_interest = result
-            resp = ProjectResponse.model_validate(project, from_attributes=True)
+            resp = ProjectListResponse.model_validate(project, from_attributes=True)
 
             return {
                 **resp.model_dump(),
-                "area_of_interest":  json.loads(area_of_interest)
+                "area_of_interest":  {**area_of_interest, "geometry": json.loads(area_of_interest["geometry"])},
             }
 
 
