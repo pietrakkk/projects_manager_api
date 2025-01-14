@@ -2,9 +2,8 @@ import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
-
 from core.utils import validate_date
+from pydantic import BaseModel, Field, model_validator
 
 
 class GeoJsonfileType(Enum):
@@ -17,7 +16,7 @@ class ProjectCreate(BaseModel):
     end_date: datetime.date
     description: str | None = Field(..., max_length=255)
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def validate_dates(cls, data: dict[str, Any]) -> dict[str, Any]:
         date_range_start = validate_date(data.get("start_date"))

@@ -1,11 +1,11 @@
-from typing import Generic, TypeVar, List, Type, Dict, Any
+from typing import Any, Dict, Generic, List, Type, TypeVar
 
 from core.db.config import AsyncSessionLocal
 from core.db.models import Base
-from sqlalchemy import select, delete, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import NoResultFound
 
-T = TypeVar('T', bound=Base)
+T = TypeVar("T", bound=Base)
 
 
 class DBRepository(Generic[T]):
@@ -41,7 +41,6 @@ class DBRepository(Generic[T]):
             stmt = delete(self.db_model).where(self.db_model.id == entity_id)
             await session.execute(stmt)
             return await session.commit()
-
 
     async def update(self, entity_id: int, update_data: Dict[str, Any]) -> T:
         async with self.session_factory() as session:

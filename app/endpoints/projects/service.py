@@ -2,7 +2,7 @@ import json
 from typing import Any
 
 from core.db.config import AsyncSessionLocal
-from core.db.models import Project, AreaOfInterest
+from core.db.models import AreaOfInterest, Project
 from endpoints.projects.repository import projects_repository
 from endpoints.projects.schema import ProjectCreate, ProjectListResponse
 from geoalchemy2.functions import ST_AsGeoJSON
@@ -16,8 +16,10 @@ class ProjectService:
     def __init__(self, project_repository):
         self.repository = project_repository
 
-    async def create_project(self, payload: ProjectCreate, file_content: dict[str, Any], file_name: str) -> Project:
-        geometry = shape(file_content['geometry'])
+    async def create_project(
+        self, payload: ProjectCreate, file_content: dict[str, Any], file_name: str
+    ) -> Project:
+        geometry = shape(file_content["geometry"])
         wkb_geometry = wkb_dumps(geometry, hex=True)
         new_file = AreaOfInterest(geometry=wkb_geometry, file_name=file_name)
         project = Project(
@@ -25,7 +27,7 @@ class ProjectService:
             name=payload.name,
             start_date=payload.start_date,
             end_date=payload.end_date,
-            description=payload.description
+            description=payload.description,
         )
 
         return await self.repository.add(project)
@@ -37,9 +39,11 @@ class ProjectService:
                 select(
                     Project,
                     func.json_build_object(
-                        'file_name', AreaOfInterest.file_name,
-                        'geometry', ST_AsGeoJSON(AreaOfInterest.geometry)
-                    ).label("area_of_interest")
+                        "file_name",
+                        AreaOfInterest.file_name,
+                        "geometry",
+                        ST_AsGeoJSON(AreaOfInterest.geometry),
+                    ).label("area_of_interest"),
                 )
                 .join(AreaOfInterest)
                 .where(Project.id == project_id)
@@ -56,7 +60,10 @@ class ProjectService:
 
             return {
                 **resp.model_dump(),
-                "area_of_interest":  {**area_of_interest, "geometry": json.loads(area_of_interest["geometry"])},
+                "area_of_interest": {
+                    **area_of_interest,
+                    "geometry": json.loads(area_of_interest["geometry"]),
+                },
             }
 
 
